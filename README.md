@@ -2,11 +2,6 @@
 
 > An end-to-end real-time data streaming and processing pipeline demonstrating the **Medallion Architecture** (Bronze, Silver, Gold). Built to handle continuous data flows, it ingests live cryptocurrency market data, streams it through a message broker, and processes it into a data warehouse for downstream analytics.
 
-### Current Status
-**Bronze Layer** (The data producer that will fetch real-time market data and push it into your Redpanda broker)
-
-
-## Architecture & Tech Stack
 
 * **Data Source:** CoinGecko Public API (Live BTC & ETH prices)
 * **Producer (Bronze Layer):** Python, FastAPI, `httpx`
