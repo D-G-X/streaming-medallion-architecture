@@ -1,0 +1,1 @@
+# streaming-medallion-architecture
