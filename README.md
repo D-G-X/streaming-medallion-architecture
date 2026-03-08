@@ -1,3 +1,29 @@
-# streaming-medallion-architecture
+# Streaming Medallion Architecture
 
-An end-to-end streaming ETL pipeline demonstrating real-time data processing and robust infrastructure design. Built with Python, FastAPI, Redpanda, and PostgreSQL, this project relies on a Dockerized environment to ensure reproducibility. It routes raw data (Bronze), enforces schema and data quality (Silver), and calculates rolling business metrics (Gold).
+> An end-to-end real-time data streaming and processing pipeline demonstrating the **Medallion Architecture** (Bronze, Silver, Gold). Built to handle continuous data flows, it ingests live cryptocurrency market data, streams it through a message broker, and processes it into a data warehouse for downstream analytics.
+
+### Current Status
+**Bronze Layer** (The data producer that will fetch real-time market data and push it into your Redpanda broker)
+
+
+## Architecture & Tech Stack
+
+* **Data Source:** CoinGecko Public API (Live BTC & ETH prices)
+* **Producer (Bronze Layer):** Python, FastAPI, `httpx`
+* **Message Broker:** Redpanda (Lightweight, Kafka-compatible)
+* **Containerization & Orchestration:** Docker Compose
+* **Storage (Gold Layer):** PostgreSQL 15 *(Setup complete, integration pending)*
+
+## Current Project Status: Bronze Layer Complete
+The **Bronze Layer** (raw data ingestion) is fully operational. It reliably fetches data using asynchronous Python and streams it into the Redpanda broker without hitting API rate limits.
+
+### Engineering Decisions
+* **Redpanda over Kafka:** Chosen for its single-binary architecture, eliminating the need for Zookeeper while maintaining 100% Kafka API compatibility.
+* **Rate Limiting:** The public CoinGecko API strictly limits requests. The FastAPI background task utilizes `asyncio.sleep(10)` to purposefully throttle ingestion to 6 requests/minute, ensuring continuous, error-free streaming without requiring paid API keys.
+
+---
+
+## How to Run locally (Docker)
+
+### 1. Start the Infrastructure
+Ensure your Docker daemon is running.
