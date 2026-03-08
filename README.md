@@ -19,7 +19,7 @@ The **Bronze Layer** (raw data ingestion) is fully operational. It reliably fetc
 
 ### Engineering Decisions
 * **Redpanda over Kafka:** Chosen for its single-binary architecture, eliminating the need for Zookeeper while maintaining 100% Kafka API compatibility.
-* **Rate Limiting:** The public CoinGecko API strictly limits requests. The FastAPI background task utilizes `asyncio.sleep(10)` to purposefully throttle ingestion to 6 requests/minute, ensuring continuous, error-free streaming without requiring paid API keys.
+* **Rate Limiting:** The public CoinGecko API strictly limits requests. The FastAPI background task utilizes `asyncio.sleep(300)` to purposefully throttle ingestion to 6 requests/minute, ensuring continuous, error-free streaming without requiring paid API keys.
 
 ---
 
