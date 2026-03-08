@@ -1,15 +1,21 @@
 import asyncio
 import json
+import os
 import time
 import httpx
+from dotenv import load_dotenv
 from fastapi import FastAPI, BackgroundTasks
 from kafka import KafkaProducer
 
+load_dotenv()
+
 app = FastAPI(title="Market Data Producer")
 
-# Kafka/Redpanda Configuration
-KAFKA_BROKER = "localhost:19092"
-TOPIC_NAME = "raw-market-data"
+# Configuration from environment
+KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:19092")
+TOPIC_NAME = os.getenv("KAFKA_TOPIC", "raw-market-data")
+COINGECKO_API_URL = os.getenv("COINGECKO_API_URL", "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd")
+FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SECONDS", "300"))
 
 # Initialize Kafka Producer
 producer = KafkaProducer(
@@ -26,9 +32,7 @@ async def fetch_and_publish():
     async with httpx.AsyncClient() as client:
         while is_streaming:
             try:
-                response = await client.get(
-                    "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd"
-                )
+                response = await client.get(COINGECKO_API_URL)
                 data = response.json()
                 
                 payload = {
@@ -45,8 +49,7 @@ async def fetch_and_publish():
             except Exception as e:
                 print(f"Error fetching/publishing data: {e}")
             
-            # Wait 5 minutes to avoid hitting API rate limits
-            await asyncio.sleep(300)
+            await asyncio.sleep(FETCH_INTERVAL)
 
 @app.post("/start")
 async def start_streaming(background_tasks: BackgroundTasks):
@@ -62,7 +65,7 @@ async def start_streaming(background_tasks: BackgroundTasks):
 async def next_fetch_time():
     """Endpoint to know when the next API call to fetch will occur."""
     global fetch_time, is_streaming
-    next_fetch = fetch_time + 300
+    next_fetch = fetch_time + FETCH_INTERVAL
     if not is_streaming:
         return {"status":"Not Streaming"}
     return {
