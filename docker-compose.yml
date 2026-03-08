@@ -1,0 +1,51 @@
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.3.9
+    container_name: redpanda-broker
+    ports:
+      - "9092:9092"
+      - "19092:19092"
+    command:
+      - start
+      - --smp 1
+      - --memory 1G
+      - --reserve-memory 0M
+      - --overprovisioned
+      - --node-id 0
+      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
+    networks:
+      - data-network
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v3.5.3
+    container_name: redpanda-console
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+    depends_on:
+      - redpanda
+    networks:
+      - data-network
+
+  postgres:
+    image: postgres:15
+    container_name: data-warehouse
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: market_data
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data-network
+
+networks:
+  data-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
