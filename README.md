@@ -30,7 +30,7 @@ The consumer (`consumer/main.py`) subscribes to the Redpanda topic, acting as an
 
 The presentation layer is handled natively within PostgreSQL for maximum query performance.
 
-- **Engineering Detail:** A Python setup script (`gold/setup_views.py`) programmatically executes DDL to create the `crypto_market_metrics` view. This view leverages SQL's `date_trunc` to calculate real-time, 1-minute tumbling window metrics (moving average, high, low, and data point counts) directly from the Silver table.
+- **Engineering Detail:** A Python setup script (`gold_layer/setup_views.py`) programmatically executes DDL to create the `crypto_market_metrics` view. This view leverages SQL's `date_trunc` to calculate real-time, 1-minute tumbling window metrics (moving average, high, low, and data point counts) directly from the Silver table.
 
 ---
 
@@ -99,7 +99,7 @@ curl -X POST http://127.0.0.1:8000/start
 Open **Terminal 2** and start the stream processor:
 
 ```bash
-python consumer/main.py
+python -m consumer.main
 ```
 
 ### Step 3C: Set Up the Gold Layer (Aggregations)
@@ -107,7 +107,7 @@ python consumer/main.py
 Open **Terminal 3** and run the setup script to build the business metrics view:
 
 ```bash
-python gold/setup_views.py
+python -m gold_layer.setup_views
 ```
 
 ## 4. View the Final Results
