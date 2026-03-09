@@ -17,13 +17,15 @@
 
 The producer (`producer/main.py`) runs an asynchronous FastAPI background task that fetches live data from the CoinGecko API.
 
-- **Engineering Detail:** The producer utilizes `asyncio.sleep()` to purposely throttle ingestion to 6 requests/minute, respecting the public API rate limits while ensuring a continuous, error-free stream. Raw JSON payloads are pushed to the `raw-market-data` Redpanda topic.
+- **Engineering Detail:** The producer utilizes `asyncio.sleep()` with a configurable interval (default: 5 minutes) to throttle ingestion, respecting the public API rate limits while ensuring a continuous stream. Raw JSON payloads are pushed to the `raw-market-data` Redpanda topic.
+- **Retry Logic:** Failed API calls are automatically retried up to 3 times with a 5-second delay between attempts, using `response.raise_for_status()` to catch non-200 responses.
+- **API Endpoints:** `POST /start` to begin streaming, `POST /stop` to halt it, and `GET /next_fetch_time` to check when the next API call is scheduled.
 
 ### Silver Layer (Cleansed & Conformed)
 
 The consumer (`consumer/main.py`) subscribes to the Redpanda topic, acting as an infinite stream processor.
 
-- **Engineering Detail:** It deserializes the raw JSON and uses **Pydantic** for strict schema validation. Valid records are flattened, strictly typed, and loaded into the `silver_market_data` PostgreSQL table via SQLAlchemy.
+- **Engineering Detail:** It deserializes the raw JSON and uses **Pydantic** for strict schema validation. Valid records are flattened, strictly typed, and loaded into the `crypto_market_data` PostgreSQL table via SQLAlchemy.
 - **Fault Tolerance (DLQ):** If malformed data or a "poison pill" enters the stream, the validation layer catches it and gracefully routes the broken payload to a separate `dead-letter-queue` topic, ensuring the main pipeline never crashes.
 
 ### Gold Layer (Business Aggregations)
@@ -31,6 +33,30 @@ The consumer (`consumer/main.py`) subscribes to the Redpanda topic, acting as an
 The presentation layer is handled natively within PostgreSQL for maximum query performance.
 
 - **Engineering Detail:** A Python setup script (`gold_layer/setup_views.py`) programmatically executes DDL to create the `crypto_market_metrics` view. This view leverages SQL's `date_trunc` to calculate real-time, 1-minute tumbling window metrics (moving average, high, low, and data point counts) directly from the Silver table.
+
+---
+
+## Project Structure
+
+```
+├── producer/
+│   ├── main.py          # FastAPI app & streaming logic
+│   └── config.py        # Producer-specific config
+├── consumer/
+│   ├── main.py          # Kafka consumer & processing loop
+│   ├── db.py            # Database engine & session setup
+│   ├── models.py        # SQLAlchemy models
+│   └── schemas.py       # Pydantic validation schemas
+├── gold_layer/
+│   └── setup_views.py   # SQL view creation script
+├── shared/
+│   └── __init__.py      # Shared Kafka config
+├── test/
+│   └── test_dlq.py      # DLQ poison message test
+├── docker-compose.yml
+├── requirements.txt
+└── .env
+```
 
 ---
 
@@ -52,8 +78,11 @@ First, fetch the code and spin up the required database and message broker conta
 
 ```bash
 # Clone the repository
-git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-cd your-repo-name
+git clone https://github.com/your-username/streaming-medallion-architecture.git
+cd streaming-medallion-architecture
+
+# Copy the environment file and configure it
+cp .env.sample .env
 
 # Start Redpanda and PostgreSQL in the background
 docker-compose up -d
