@@ -219,7 +219,9 @@ This project includes a pre-configured Grafana dashboard that connects directly 
 
 #### 4. Executive Snapshot (Live Current Price)
 
-![Live Current Price KPIs](assets/kpi.png)
+<p align="center">
+  <img src="assets/kpi.png" alt="Live Current Price KPIs">
+</p>
 
 - **Technical:** Executive KPI retrieving the absolute latest timestamped record from the Silver Layer database. Acts as a real-time pulse check for the data source connection.
 - **Business Application:** The ultimate top-line KPI. It provides executives, portfolio managers, and stakeholders with an instant, zero-friction snapshot of current market reality before diving into deeper historical analysis.
