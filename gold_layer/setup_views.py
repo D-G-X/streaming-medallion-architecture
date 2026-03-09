@@ -1,18 +1,5 @@
-from sqlalchemy import create_engine, text
-import os
-from dotenv import load_dotenv
-
-# Database Configuration (Make sure this matches your consumer)
-load_dotenv()
-
-# DB Configurations from ENV
-DB_USER = os.getenv("POSTGRES_USER")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-DB_PORT = os.getenv("POSTGRES_PORT")
-DB_NAME = os.getenv("POSTGRES_DB")
-
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@localhost:{DB_PORT}/{DB_NAME}"
-engine = create_engine(DATABASE_URL)
+from sqlalchemy import text
+from consumer.db import engine
 
 CREATE_VIEW_SQL = """
 CREATE OR REPLACE VIEW crypto_market_metrics AS
@@ -29,7 +16,7 @@ ORDER BY metric_minute DESC, coin;
 """
 
 def setup_view():
-    print("🥇 Connecting to PostgreSQL...")
+    print("Connecting to PostgreSQL...")
     try:
         with engine.begin() as connection:
             connection.execute(text(CREATE_VIEW_SQL))
