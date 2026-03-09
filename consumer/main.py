@@ -1,51 +1,21 @@
 import os
-from typing import Dict
-from dotenv import load_dotenv
 import json
 from datetime import datetime
+from dotenv import load_dotenv
 from kafka import KafkaConsumer, KafkaProducer
-from pydantic import BaseModel, ValidationError
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
-from sqlalchemy.orm import declarative_base, sessionmaker
+from pydantic import ValidationError
+from consumer.db import engine, BASE, Session
+from consumer.models import CryptoMarketData
+from consumer.schemas import RawPayload
 
 load_dotenv()
 
-# DB Configurations from ENV
-DB_USER = os.getenv("POSTGRES_USER")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-DB_PORT = os.getenv("POSTGRES_PORT")
-DB_NAME = os.getenv("POSTGRES_DB")
-
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@localhost:{DB_PORT}/{DB_NAME}"
-
-engine = create_engine(DATABASE_URL)
-BASE = declarative_base()
-
-class CryptoMarketDataBase(BASE):
-    __tablename__ = "crypto_market_data"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp = Column(DateTime, nullable=False)
-    coin = Column(String(50), nullable=False)
-    price_usd = Column(Float, nullable=False)
-    source = Column(String(60), nullable=False)
-
 BASE.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
 session = Session()
 
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:19092")
 TOPIC_NAME = os.getenv("KAFKA_TOPIC", "raw-market-data")
 DLQ_TOPIC = os.getenv("DLQ_TOPIC", "dead-letter-queue")
-
-
-class CoinPrice(BaseModel):
-    usd: float 
-
-class RawPayload(BaseModel):
-    ingested_at: float 
-    source: str
-    raw_data: Dict[str, CoinPrice]
 
 consumer = KafkaConsumer(
     TOPIC_NAME,
@@ -77,7 +47,7 @@ try:
                 print(coin)
                 price = prices.get('usd')
                 if price is not None:
-                    record = CryptoMarketDataBase(
+                    record = CryptoMarketData(
                         timestamp=ingested_at,
                         coin=coin,
                         price_usd=price,
