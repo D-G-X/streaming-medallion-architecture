@@ -2,6 +2,10 @@
 
 > An end-to-end, real-time data streaming and processing pipeline demonstrating the **Medallion Architecture** (Bronze, Silver, Gold). Built to handle continuous data flows, it ingests live cryptocurrency market data, streams it through a message broker, transforms it into a relational schema, and calculates real-time business aggregations.
 
+# Real-Time Crypto Streaming Pipeline
+
+![Architecture Diagram](assets/architecture_diagram.png)
+
 ## Architecture & Tech Stack
 
 - **Data Source:** CoinGecko Public API (Live BTC & ETH prices)
