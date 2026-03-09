@@ -19,7 +19,7 @@ consumer = KafkaConsumer(
     group_id='consumer-process'
 )
 
-# We need a producer to send bad messages to the DLQ
+# A producer to send bad messages to the DLQ
 dlq_producer = KafkaProducer(
     bootstrap_servers=KAFKA_BROKER,
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
