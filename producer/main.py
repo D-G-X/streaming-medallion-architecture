@@ -1,21 +1,21 @@
 import asyncio
 import json
-import os
 import time
 import httpx
-from dotenv import load_dotenv
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, BackgroundTasks
 from kafka import KafkaProducer
+from shared import KAFKA_BROKER, TOPIC_NAME
+from producer.config import COINGECKO_API_URL, FETCH_INTERVAL, MAX_RETRIES, RETRY_DELAY
 
-load_dotenv()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    producer.flush()
+    producer.close()
+    print("Kafka producer closed.")
 
-app = FastAPI(title="Market Data Producer")
-
-# Configuration from environment
-KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:19092")
-TOPIC_NAME = os.getenv("KAFKA_TOPIC", "raw-market-data")
-COINGECKO_API_URL = os.getenv("COINGECKO_API_URL", "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd")
-FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SECONDS", "300"))
+app = FastAPI(title="Market Data Producer", lifespan=lifespan)
 
 # Initialize Kafka Producer
 producer = KafkaProducer(
@@ -31,23 +31,33 @@ async def fetch_and_publish():
     global is_streaming, fetch_time
     async with httpx.AsyncClient() as client:
         while is_streaming:
-            try:
-                response = await client.get(COINGECKO_API_URL)
-                data = response.json()
-                
-                payload = {
-                    "ingested_at": time.time(),
-                    "source": "coingecko",
-                    "raw_data": data
-                }
-                fetch_time = time.time()
-                
-                # Publish to Redpanda
-                producer.send(TOPIC_NAME, payload)
-                print(f"Published to {TOPIC_NAME}: {payload}")
-                
-            except Exception as e:
-                print(f"Error fetching/publishing data: {e}")
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    response = await client.get(COINGECKO_API_URL)
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    payload = {
+                        "ingested_at": time.time(),
+                        "source": "coingecko",
+                        "raw_data": data
+                    }
+                    fetch_time = time.time()
+                    
+                    # Publish to Redpanda
+                    producer.send(TOPIC_NAME, payload)
+                    producer.flush()
+                    print(f"Published to {TOPIC_NAME}: {payload}")
+                    break
+                    
+                except httpx.HTTPStatusError as e:
+                    print(f"API error (attempt {attempt}/{MAX_RETRIES}): {e.response.status_code}")
+                    if attempt < MAX_RETRIES:
+                        await asyncio.sleep(RETRY_DELAY)
+                except Exception as e:
+                    print(f"Error (attempt {attempt}/{MAX_RETRIES}): {e}")
+                    if attempt < MAX_RETRIES:
+                        await asyncio.sleep(RETRY_DELAY)
             
             await asyncio.sleep(FETCH_INTERVAL)
 

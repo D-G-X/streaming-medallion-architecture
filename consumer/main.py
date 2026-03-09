@@ -1,21 +1,14 @@
-import os
 import json
 from datetime import datetime
-from dotenv import load_dotenv
 from kafka import KafkaConsumer, KafkaProducer
 from pydantic import ValidationError
 from consumer.db import engine, BASE, Session
 from consumer.models import CryptoMarketData
 from consumer.schemas import RawPayload
-
-load_dotenv()
+from shared import KAFKA_BROKER, TOPIC_NAME, DLQ_TOPIC
 
 BASE.metadata.create_all(engine)
 session = Session()
-
-KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:19092")
-TOPIC_NAME = os.getenv("KAFKA_TOPIC", "raw-market-data")
-DLQ_TOPIC = os.getenv("DLQ_TOPIC", "dead-letter-queue")
 
 consumer = KafkaConsumer(
     TOPIC_NAME,
