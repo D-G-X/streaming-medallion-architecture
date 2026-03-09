@@ -146,7 +146,7 @@ With the pipeline running, you can query the database directly to see the real-t
 Run this command in your terminal:
 
 ```bash
-docker exec -it data-warehouse psql -U admin -d market_data -c "SELECT * FROM crypto_market_metrics LIMIT 10;"
+docker exec -it data-warehouse psql -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT * FROM crypto_market_metrics LIMIT 10;"
 ```
 
 ## 5. Monitor the Message Broker
@@ -162,9 +162,9 @@ To visualize the real-time aggregations and monitor system health, this project 
 ### Accessing Grafana
 
 1. Open your web browser and navigate to `http://localhost:3000`.
-2. Log in with the default credentials:
-   - **Username:** admin
-   - **Password:** admin
+2. Log in with the credentials from your `.env` file:
+   - **Username:** `GRAFANA_ADMIN_USER`
+   - **Password:** `GRAFANA_ADMIN_PASSWORD`
 
 ### Connecting the Data Source
 
