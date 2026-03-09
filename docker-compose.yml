@@ -43,6 +43,19 @@ services:
     networks:
       - data-network
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - data-network
+
 networks:
   data-network:
     driver: bridge
